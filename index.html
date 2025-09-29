@@ -1,140 +1,57 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Manly Library Status</title>
-  <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      height: 100%;
-      font-family: Arial, sans-serif;
-    }
-
-    body {
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      text-align: center;
-      padding: 20px;
-      transition: background 1s ease;
-    }
-
-    h1 {
-      font-size: 2rem;
-      margin-bottom: 20px;
-    }
-
-    #capacity_label {
-      font-size: 3rem;
-      font-weight: bold;
-      margin: 20px 0;
-      transition: color 0.5s;
-      word-break: break-word;
-    }
-
-    #last-updated {
-      font-size: 1rem;
-      margin-top: 15px;
-      color: #333;
-      transition: color 0.3s ease;
-    }
-
-    @media (max-width: 400px) {
-      h1 { font-size: 1.5rem; }
-      #capacity_label { font-size: 2.5rem; }
-      #last-updated { font-size: 0.9rem; }
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manly Library Status</title>
+<style>
+  html,body{margin:0;padding:0;height:100%;font-family:Arial,sans-serif;}
+  body{display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:20px;transition:background 1s ease;}
+  h1{font-size:2rem;margin-bottom:20px;}
+  #status{font-size:3rem;font-weight:bold;margin:20px 0;word-break:break-word;}
+  #time{font-size:1rem;margin-top:15px;color:#333;transition:color 0.3s;}
+  @media(max-width:400px){h1{font-size:1.5rem}#status{font-size:2.5rem}#time{font-size:0.9rem}}
+</style>
 </head>
 <body>
-  <h1>Manly Library Status</h1>
-  <div id="capacity_label">Loading...</div>
-  <div id="last-updated">Last updated: --</div>
+<h1>Manly Library Status</h1>
+<div id="status">Loading...</div>
+<div id="time">Last updated: --</div>
+<script>
+let api="https://prod-33.australiasoutheast.logic.azure.com:443/workflows/c501021564ab4898b389b15186a73fb6/triggers/manual/paths/invoke?api-version=2016-06-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=_LGRB1L89cjJdbK7g25CGGLR1nRP4eeaYpWHNa6CQDk";
 
-  <script>
-    let api_url_mutation = "https://prod-33.australiasoutheast.logic.azure.com:443/workflows/c501021564ab4898b389b15186a73fb6/triggers/manual/paths/invoke?api-version=2016-06-01+++sp=%2Ftriggers%2Fmanual%2Frun+++sv=1.0+++sig=_LGRB1L89cjJdbK7g25CGGLR1nRP4eeaYpWHNa6CQDk";
-    let api_url = api_url_mutation.replace(/\+\+\+/g, "&");
+if("Notification"in window && Notification.permission!=="granted") Notification.requestPermission();
 
-    let lastValue = null;
+async function fetchStatus(){
+  try{
+    let r=await fetch(api);
+    if(!r.ok) return -1;
+    return (await r.json()).indicator;
+  }catch(e){return -1;}
+}
 
-    // Request notification permission
-    if ("Notification" in window && Notification.permission !== "granted") {
-      Notification.requestPermission();
-    }
+async function update(){
+  let s=await fetchStatus();
+  let lbl,textColor="";  
+  switch(s){
+    case 0: lbl="Quiet"; bg="linear-gradient(120deg,#d0f0c0,#e0ffe0)"; break;
+    case 1: lbl="Moderate"; bg="linear-gradient(120deg,#fff4b0,#fffacd)"; break;
+    case 2: lbl="Busy"; bg="linear-gradient(120deg,#f8c0c0,#ffdada)"; 
+            if(Notification.permission==="granted") new Notification("Manly Library Alert!",{body:"Library is busy!",icon:"https://cdn-icons-png.flaticon.com/512/564/564619.png"}); 
+            break;
+    default: lbl="Unknown"; bg="linear-gradient(120deg,#e0e0e0,#f0f0f0)";
+  }
+  document.getElementById("status").innerHTML=lbl;
+  document.body.style.background=bg;
 
-    async function run_indicator() {
-      let x = await get_indicator();
-      if (x !== -1) {
-        if (x === 2 && lastValue !== 2 && Notification.permission === "granted") {
-          let now = new Date();
-          let timeString = now.toLocaleTimeString([], { hour: '2-digit', minute:'2-digit', second:'2-digit' });
-          new Notification("Manly Library Alert!", {
-            body: `Library is busy at ${timeString}`,
-            icon: "https://cdn-icons-png.flaticon.com/512/564/564619.png"
-          });
-        }
-        lastValue = x;
-        update_dashboard(lastValue, false);
-      } else {
-        if (lastValue !== null) {
-          update_dashboard(lastValue, true);
-        } else {
-          update_dashboard(-1, true);
-        }
-      }
-    }
+  let now=new Date();
+  document.getElementById("time").innerHTML=`Last updated: ${now.toLocaleDateString([], {year:'numeric',month:'short',day:'numeric'})}, ${now.toLocaleTimeString()}`;
+  document.getElementById("time").style.color=s===-1?"red":"#333";
+  document.title=`Manly Library Status: ${lbl}`;
+}
 
-    async function get_indicator() {
-      try {
-        const res = await fetch(api_url);
-        if (!res.ok) return -1;
-        const j = await res.json();
-        return j.indicator;
-      } catch (err) {
-        console.error(err);
-        return -1;
-      }
-    }
-
-    function update_dashboard(value, isError) {
-      let statusText, bgColor;
-
-      switch(value) {
-        case 0:
-          statusText = 'Quiet';
-          bgColor = 'linear-gradient(120deg, #d0f0c0, #e0ffe0)';
-          break;
-        case 1:
-          statusText = 'Moderate';
-          bgColor = 'linear-gradient(120deg, #fff4b0, #fffacd)';
-          break;
-        case 2:
-          statusText = 'Busy';
-          bgColor = 'linear-gradient(120deg, #f8c0c0, #ffdada)';
-          break;
-        default:
-          statusText = 'Unknown';
-          bgColor = 'linear-gradient(120deg, #e0e0e0, #f0f0f0)';
-      }
-
-      document.getElementById("capacity_label").innerHTML = statusText;
-      document.body.style.background = bgColor;
-
-      let now = new Date();
-      let dateString = now.toLocaleDateString([], { year: 'numeric', month: 'short', day: 'numeric' });
-      let timeString = now.toLocaleTimeString([], { hour: '2-digit', minute:'2-digit', second:'2-digit' });
-      let timestamp = document.getElementById("last-updated");
-      timestamp.innerHTML = `Last updated: ${dateString}, ${timeString}`;
-      timestamp.style.color = isError ? "red" : "#333";
-
-      document.title = `Manly Library Status: ${statusText}`;
-    }
-
-    run_indicator();
-    setInterval(run_indicator, 5000);
-  </script>
+update();
+setInterval(update,5000);
+</script>
 </body>
 </html>
