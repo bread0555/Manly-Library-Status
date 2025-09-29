@@ -2,30 +2,50 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Manly Library Status</title>
   <style>
-    body {
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
       font-family: Arial, sans-serif;
-      text-align: center;
-      padding: 50px;
-      transition: background 1s ease;
-      min-height: 100vh;
+    }
+
+    body {
       display: flex;
       flex-direction: column;
+      justify-content: center;
       align-items: center;
-      justify-content: start;
+      text-align: center;
+      padding: 20px;
+      transition: background 1s ease;
     }
+
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 20px;
+    }
+
     #capacity_label {
-      font-size: 32px;
+      font-size: 3rem;
       font-weight: bold;
-      margin-top: 20px;
+      margin: 20px 0;
       transition: color 0.5s;
+      word-break: break-word;
     }
+
     #last-updated {
-      font-size: 14px;
+      font-size: 1rem;
       margin-top: 15px;
       color: #333;
       transition: color 0.3s ease;
+    }
+
+    @media (max-width: 400px) {
+      h1 { font-size: 1.5rem; }
+      #capacity_label { font-size: 2.5rem; }
+      #last-updated { font-size: 0.9rem; }
     }
   </style>
 </head>
@@ -85,25 +105,24 @@
       switch(value) {
         case 0:
           statusText = 'Quiet';
-          bgColor = 'linear-gradient(120deg, #d0f0c0, #e0ffe0)'; // calming green
+          bgColor = 'linear-gradient(120deg, #d0f0c0, #e0ffe0)';
           break;
         case 1:
           statusText = 'Moderate';
-          bgColor = 'linear-gradient(120deg, #fff4b0, #fffacd)'; // soft yellow
+          bgColor = 'linear-gradient(120deg, #fff4b0, #fffacd)';
           break;
         case 2:
           statusText = 'Busy';
-          bgColor = 'linear-gradient(120deg, #f8c0c0, #ffdada)'; // warm red
+          bgColor = 'linear-gradient(120deg, #f8c0c0, #ffdada)';
           break;
         default:
           statusText = 'Unknown';
-          bgColor = 'linear-gradient(120deg, #e0e0e0, #f0f0f0)'; // gray
+          bgColor = 'linear-gradient(120deg, #e0e0e0, #f0f0f0)';
       }
 
       document.getElementById("capacity_label").innerHTML = statusText;
       document.body.style.background = bgColor;
 
-      // Timestamp
       let now = new Date();
       let dateString = now.toLocaleDateString([], { year: 'numeric', month: 'short', day: 'numeric' });
       let timeString = now.toLocaleTimeString([], { hour: '2-digit', minute:'2-digit', second:'2-digit' });
@@ -111,7 +130,6 @@
       timestamp.innerHTML = `Last updated: ${dateString}, ${timeString}`;
       timestamp.style.color = isError ? "red" : "#333";
 
-      // Page title
       document.title = `Manly Library Status: ${statusText}`;
     }
 
